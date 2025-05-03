@@ -13,8 +13,6 @@ namespace NetLeaf.Bridge
         {
             try
             {
-                Console.WriteLine("C#: RunMethod invoked from native code");
-
                 // Read method namespace string
                 string methodNamespaceStr = null;
                 if (methodNamespace != IntPtr.Zero)
@@ -22,8 +20,6 @@ namespace NetLeaf.Bridge
                     methodNamespaceStr = RuntimeInformation.IsOSPlatform(OSPlatform.Windows)
                         ? Marshal.PtrToStringUni(methodNamespace)
                         : Marshal.PtrToStringUTF8(methodNamespace);
-
-                    Console.WriteLine($"C#: Method namespace: {methodNamespaceStr}");
                 }
                 else
                 {
@@ -43,8 +39,6 @@ namespace NetLeaf.Bridge
                             assemblies[i] = RuntimeInformation.IsOSPlatform(OSPlatform.Windows)
                                 ? Marshal.PtrToStringAnsi(assemblyPathPtr)
                                 : Marshal.PtrToStringUTF8(assemblyPathPtr);
-
-                            Console.WriteLine($"C#: Loaded Assembly {i}: {assemblies[i]}");
                         }
                         else
                         {
@@ -77,7 +71,6 @@ namespace NetLeaf.Bridge
                     if (string.IsNullOrEmpty(assemblyName)) continue;
 
                     string fullPath = Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), assemblyName);
-                    Console.WriteLine($"Loading assembly: {fullPath}");
 
                     Assembly assembly = Assembly.LoadFrom(fullPath);
                     Type type = assembly.GetType(fullTypeName);
@@ -95,7 +88,6 @@ namespace NetLeaf.Bridge
                         continue;
                     }
 
-                    Console.WriteLine($"Invoking static method: {fullTypeName}.{methodName}");
                     method.Invoke(null, null);
                     break; // We had a successful invoke, break out of the loop
                 }
