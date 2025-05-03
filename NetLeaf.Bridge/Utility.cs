@@ -10,7 +10,7 @@ namespace NetLeaf.Bridge
         {
             try
             {
-                Console.WriteLine("RunMethod invoked from native code");
+                Console.WriteLine("C#: RunMethod invoked from native code");
 
                 // Log methodNamespace
                 string methodNamespaceStr = null;
@@ -26,11 +26,11 @@ namespace NetLeaf.Bridge
                     {
                         methodNamespaceStr = Marshal.PtrToStringUTF8(methodNamespace);
                     }
-                    Console.WriteLine($"Method namespace: {methodNamespaceStr}");
+                    Console.WriteLine($"C#: Method namespace: {methodNamespaceStr}");
                 }
                 else
                 {
-                    Console.WriteLine("Method namespace pointer is null");
+                    Console.WriteLine("C#: Method namespace pointer is null");
                 }
 
                 // Extract loaded assemblies
@@ -52,11 +52,11 @@ namespace NetLeaf.Bridge
                             {
                                 assemblies[i] = Marshal.PtrToStringUTF8(assemblyPathPtr);
                             }
-                            Console.WriteLine($"Loaded Assembly {i}: {assemblies[i]}");
+                            Console.WriteLine($"C#: Loaded Assembly {i}: {assemblies[i]}");
                         }
                         else
                         {
-                            Console.WriteLine($"Assembly pointer {i} is null");
+                            Console.WriteLine($"C#: Assembly pointer {i} is null");
                             assemblies[i] = null;
                         }
                     }

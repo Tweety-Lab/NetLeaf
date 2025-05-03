@@ -2,6 +2,7 @@
 
 #define DOTNETBACKEND_EXPORTS
 #include "DotNetBackend.h"
+#include "NetLeaf.h"
 
 void* DotNetBackend::LoadLib(const char_t* path)
 {
@@ -249,8 +250,7 @@ void DotNetBackend::RunMethod(const char* methodNamespace)
 #endif
 
     // Create an array of loaded assembly paths
-    std::vector<const char*> loadedAssemblies;
-    loadedAssemblies.push_back(m_assemblyPath.c_str());
+    std::vector<const char*> loadedAssemblies = NetLeaf::GetLoadedAssemblyPaths();
 
     // Unmanaged memory for assembly list
     size_t assembliesCount = loadedAssemblies.size();

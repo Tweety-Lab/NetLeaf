@@ -36,3 +36,9 @@ void NetLeaf::RunCSharpMethod(const char* methodNamespace)
 		std::cerr << "Error: No CSharp backend loaded. Unable to run method: " << methodNamespace << std::endl;
 	}
 }
+
+// Return the vector of loaded assembly paths
+std::vector<const char*> NetLeaf::GetLoadedAssemblyPaths()
+{
+	return loadedAssemblyPaths;
+}
