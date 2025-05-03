@@ -36,15 +36,6 @@
     <ClInclude Include="DotNetBackend.h">
       <Filter>Header Files\DotNet</Filter>
     </ClInclude>
-    <ClInclude Include="coreclr_delegates.h">
-      <Filter>Header Files\DotNet</Filter>
-    </ClInclude>
-    <ClInclude Include="hostfxr.h">
-      <Filter>Header Files\DotNet</Filter>
-    </ClInclude>
-    <ClInclude Include="nethost.h">
-      <Filter>Header Files\DotNet</Filter>
-    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="dllmain.cpp">

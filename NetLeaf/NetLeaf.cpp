@@ -19,6 +19,9 @@ void NetLeaf::LoadCSharpBackend(ICSharpBackend* backend)
 {
 	// Store the backend instance
 	loadedBackend = backend;
+
+	// Initialize the backend
+	loadedBackend->Initialize();
 }
 
 void NetLeaf::RunCSharpMethod(const char* methodNamespace)

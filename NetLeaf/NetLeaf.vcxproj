@@ -112,6 +112,7 @@
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
+      <AdditionalIncludeDirectories>include</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -141,12 +142,9 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="coreclr_delegates.h" />
     <ClInclude Include="DotNetBackend.h" />
     <ClInclude Include="framework.h" />
-    <ClInclude Include="hostfxr.h" />
     <ClInclude Include="ICSharpBackend.h" />
-    <ClInclude Include="nethost.h" />
     <ClInclude Include="NetLeaf.h" />
     <ClInclude Include="pch.h" />
   </ItemGroup>

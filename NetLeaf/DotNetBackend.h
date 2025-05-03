@@ -2,11 +2,19 @@
 #include <string>
 #include <unordered_map>
 #include <iostream>
-#include "nethost.h"
-#include "coreclr_delegates.h"
-#include "hostfxr.h"
+#include <nethost.h>
+#include <coreclr_delegates.h>
+#include <hostfxr.h>
 
-class DotNetBackend
+#ifdef DOTNETBACKEND_EXPORTS
+#define DOTNETBACKEND_API __declspec(dllexport)
+#else
+#define DOTNETBACKEND_API __declspec(dllimport)
+#endif
+
+#include "ICSharpBackend.h"
+
+class DOTNETBACKEND_API DotNetBackend : public ICSharpBackend
 {
 private:
     // HostFxr function pointers
@@ -30,9 +38,13 @@ private:
     bool InitializeHost();
     load_assembly_and_get_function_pointer_fn GetLoadAssemblyFunction(const char_t* configPath);
 
+    // Helper to get the directory of the running library
+    std::string GetLibraryDirectory();
+
 public:
-    void Initialize();
-    void RunMethod(const char* methodNamespace);
+    // ICSharpBackend
+    void Initialize() override;
+    void RunMethod(const char* methodNamespace) override;
 
     void LogError(const std::string& message);
     void LogInfo(const std::string& message);

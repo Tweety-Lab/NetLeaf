@@ -1,6 +1,7 @@
 #include "pch.h"
-#include "DotNetBackend.h"
 
+#define DOTNETBACKEND_EXPORTS
+#include "DotNetBackend.h"
 
 void* DotNetBackend::LoadLib(const char_t* path)
 {
@@ -127,10 +128,47 @@ bool DotNetBackend::InitializeHost()
     return true;
 }
 
+std::string DotNetBackend::GetLibraryDirectory()
+{
+    // Buffer to hold the full path to the library
+    char path[MAX_PATH];
+
+    // Get the full path of the currently running library
+    if (GetModuleFileNameA(NULL, path, MAX_PATH) == 0)
+    {
+        LogError("Failed to get the library path");
+        return "";
+    }
+
+    // Find the last backslash in the path
+    std::string fullPath(path);
+    size_t lastSlash = fullPath.find_last_of("\\/");
+    if (lastSlash != std::string::npos)
+    {
+        // Return the directory part of the full path
+        return fullPath.substr(0, lastSlash + 1);
+    }
+
+    // If no directory found, return empty string
+    return "";
+}
+
 void DotNetBackend::Initialize()
 {
     if (!m_initialized)
     {
+        // Get the directory where the library is running from
+        std::string libDirectory = GetLibraryDirectory();
+        if (libDirectory.empty())
+        {
+            LogError("Failed to retrieve library directory");
+            return;
+        }
+
+        // Set the assembly and runtime config paths based on the library directory
+        m_assemblyPath = libDirectory + "NetLeaf.Bridge.dll";
+        m_runtimeConfigPath = libDirectory + "NetLeaf.Bridge.runtimeconfig.json";
+
         if (!LoadHostFxr())
         {
             LogError("Failed to load hostfxr");
@@ -166,10 +204,99 @@ void DotNetBackend::RunMethod(const char* methodNamespace)
         return;
     }
 
-    // Attempt to load assembly and run method
-    LogInfo("Running method: " + std::string(methodNamespace));
+    // Derive the assembly name (without extension)
+    size_t lastSlash = m_assemblyPath.find_last_of("/\\");
+    std::string fileName = (lastSlash != std::string::npos)
+        ? m_assemblyPath.substr(lastSlash + 1)
+        : m_assemblyPath;
 
-    // TODO: Actual code to invoke method
+    size_t dotPos = fileName.find_last_of('.');
+    std::string assemblyName = (dotPos != std::string::npos)
+        ? fileName.substr(0, dotPos)
+        : fileName;
+
+    std::string fullTypeName = "NetLeaf.Bridge.Utility, " + assemblyName;
+
+#ifdef _WIN32
+    std::wstring assemblyPathW(m_assemblyPath.begin(), m_assemblyPath.end());
+    std::wstring typeNameW(fullTypeName.begin(), fullTypeName.end());
+    std::wstring methodNameW(L"RunMethod");
+
+    const char_t* assemblyPath = assemblyPathW.c_str();
+    const char_t* typeName = typeNameW.c_str();
+    const char_t* methodName = methodNameW.c_str();
+#else
+    const char_t* assemblyPath = m_assemblyPath.c_str();
+    const char_t* typeName = fullTypeName.c_str();
+    const char_t* methodName = "RunMethod";
+#endif
+
+    // Convert methodNamespace to proper format based on platform
+#ifdef _WIN32
+	// Windows: UTF-16 conversion
+    std::wstring methodNamespaceW;
+    if (methodNamespace != nullptr) {
+        int size_needed = MultiByteToWideChar(CP_UTF8, 0, methodNamespace, -1, NULL, 0);
+        if (size_needed > 0) {
+            methodNamespaceW.resize(size_needed);
+            MultiByteToWideChar(CP_UTF8, 0, methodNamespace, -1, &methodNamespaceW[0], size_needed);
+        }
+    }
+    void* methodNamespacePtr = methodNamespace ? (void*)methodNamespaceW.c_str() : nullptr;
+#else
+	// Non-Windows: Direct char* conversion
+    void* methodNamespacePtr = (void*)methodNamespace;
+#endif
+
+    // Create an array of loaded assembly paths
+    std::vector<const char*> loadedAssemblies;
+    loadedAssemblies.push_back(m_assemblyPath.c_str());
+
+    // Unmanaged memory for assembly list
+    size_t assembliesCount = loadedAssemblies.size();
+    void* loadedAssembliesPtr = malloc(assembliesCount * sizeof(const char*));
+    if (loadedAssembliesPtr == nullptr) {
+        LogError("Failed to allocate memory for loaded assemblies");
+        return;
+    }
+
+    for (size_t i = 0; i < assembliesCount; ++i) {
+        // Copy each assembly string pointer to the unmanaged memory block
+        *((const char**)loadedAssembliesPtr + i) = loadedAssemblies[i];
+    }
+
+    void* functionPtr = nullptr;
+    int rc = m_loadAssemblyFunc(
+        assemblyPath,
+        typeName,
+        methodName,
+        UNMANAGEDCALLERSONLY_METHOD,
+        nullptr,  // Use null for delegate type as we're using UnmanagedCallersOnly
+        &functionPtr
+    );
+
+    if (rc != 0 || functionPtr == nullptr)
+    {
+        LogError("Failed to get method dispatcher from assembly. HRESULT: 0x" + std::to_string(rc));
+        free(loadedAssembliesPtr);
+        return;
+    }
+
+    typedef void (CORECLR_DELEGATE_CALLTYPE* MethodInvoker)(void*, void*, int);
+    MethodInvoker invoker = reinterpret_cast<MethodInvoker>(functionPtr);
+
+    try
+    {
+        // Call the method with the correct parameters
+        invoker(methodNamespacePtr, loadedAssembliesPtr, (int)assembliesCount);
+    }
+    catch (...)
+    {
+        LogError("Exception occurred during managed method invocation");
+    }
+
+    // Clean up the unmanaged memory
+    free(loadedAssembliesPtr);
 }
 
 void DotNetBackend::LogError(const std::string& message)
