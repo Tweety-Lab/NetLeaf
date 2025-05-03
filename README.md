@@ -7,6 +7,7 @@ NetLeaf allows simple and fast .NET C# Hosting from C++ Code through a handful o
 
 | Feature            | Supported |
 |--------------------|-----------|
+| Class Instances     | ✔️         |
 | Method Running     | ✔️         |
 | Method Arguments   | ✔️         |
 | Method Return Values | ✔️       |
