@@ -1,4 +1,7 @@
 ﻿using System;
+using System.IO;
+using System.Linq;
+using System.Reflection;
 using System.Runtime.InteropServices;
 
 namespace NetLeaf.Bridge
@@ -12,25 +15,20 @@ namespace NetLeaf.Bridge
             {
                 Console.WriteLine("C#: RunMethod invoked from native code");
 
-                // Log methodNamespace
+                // Read method namespace string
                 string methodNamespaceStr = null;
                 if (methodNamespace != IntPtr.Zero)
                 {
-                    // On Windows, this should be a wide string (UTF-16)
-                    // On other platforms, this should be UTF-8
-                    if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-                    {
-                        methodNamespaceStr = Marshal.PtrToStringUni(methodNamespace);
-                    }
-                    else
-                    {
-                        methodNamespaceStr = Marshal.PtrToStringUTF8(methodNamespace);
-                    }
+                    methodNamespaceStr = RuntimeInformation.IsOSPlatform(OSPlatform.Windows)
+                        ? Marshal.PtrToStringUni(methodNamespace)
+                        : Marshal.PtrToStringUTF8(methodNamespace);
+
                     Console.WriteLine($"C#: Method namespace: {methodNamespaceStr}");
                 }
                 else
                 {
                     Console.WriteLine("C#: Method namespace pointer is null");
+                    return;
                 }
 
                 // Extract loaded assemblies
@@ -39,19 +37,13 @@ namespace NetLeaf.Bridge
                 {
                     for (int i = 0; i < assembliesCount; i++)
                     {
-                        // Get the pointer to the assembly path string
                         IntPtr assemblyPathPtr = Marshal.ReadIntPtr(loadedAssemblies, i * IntPtr.Size);
                         if (assemblyPathPtr != IntPtr.Zero)
                         {
-                            // Convert the pointer to a string
-                            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-                            {
-                                assemblies[i] = Marshal.PtrToStringAnsi(assemblyPathPtr);
-                            }
-                            else
-                            {
-                                assemblies[i] = Marshal.PtrToStringUTF8(assemblyPathPtr);
-                            }
+                            assemblies[i] = RuntimeInformation.IsOSPlatform(OSPlatform.Windows)
+                                ? Marshal.PtrToStringAnsi(assemblyPathPtr)
+                                : Marshal.PtrToStringUTF8(assemblyPathPtr);
+
                             Console.WriteLine($"C#: Loaded Assembly {i}: {assemblies[i]}");
                         }
                         else
@@ -64,15 +56,49 @@ namespace NetLeaf.Bridge
                 else
                 {
                     Console.WriteLine("No assemblies provided or pointer is null");
+                    return;
                 }
 
-                // Execute additional logic based on methodNamespace
-                if (!string.IsNullOrEmpty(methodNamespaceStr))
+                // Parse format: Namespace.Class.Method
+                string[] parts = methodNamespaceStr.Split('.');
+                if (parts.Length < 3)
                 {
-                    Console.WriteLine($"Executing method in namespace: {methodNamespaceStr}");
+                    Console.WriteLine("Invalid format. Expected: Namespace.Class.Method");
+                    return;
                 }
 
-                Console.WriteLine("RunMethod completed successfully");
+                string @namespace = string.Join(".", parts.Take(parts.Length - 2));
+                string className = parts[parts.Length - 2];
+                string methodName = parts[parts.Length - 1];
+                string fullTypeName = $"{@namespace}.{className}";
+
+                foreach (string assemblyName in assemblies)
+                {
+                    if (string.IsNullOrEmpty(assemblyName)) continue;
+
+                    string fullPath = Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), assemblyName);
+                    Console.WriteLine($"Loading assembly: {fullPath}");
+
+                    Assembly assembly = Assembly.LoadFrom(fullPath);
+                    Type type = assembly.GetType(fullTypeName);
+
+                    if (type == null)
+                    {
+                        Console.WriteLine($"Type '{fullTypeName}' not found in assembly.");
+                        continue;
+                    }
+
+                    MethodInfo method = type.GetMethod(methodName, BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic);
+                    if (method == null)
+                    {
+                        Console.WriteLine($"Method '{methodName}' not found in type '{fullTypeName}'.");
+                        continue;
+                    }
+
+                    Console.WriteLine($"Invoking static method: {fullTypeName}.{methodName}");
+                    method.Invoke(null, null);
+                    break; // We had a successful invoke, break out of the loop
+                }
             }
             catch (Exception ex)
             {
