@@ -1,8 +1,8 @@
+#define NETLEAF_EXPORTS
+
 #include "pch.h"
 #include "NetLeaf.h"
 #include <iostream>
-
-#define NETLEAF_EXPORTS
 
 // Static member definition
 std::vector<const char*> NetLeaf::loadedAssemblyPaths;
