@@ -5,14 +5,16 @@
 #include <iostream>
 
 // Static member definition
-std::vector<const char*> NetLeaf::loadedAssemblyPaths;
 ICSharpBackend* NetLeaf::loadedBackend = nullptr;
 
 
-void NetLeaf::LoadAssembly(const char* assemblyPath) 
+void NetLeaf::LoadAssembly(const char* assemblyPath)
 {
-	// Add assembly path to the list of loaded assemblies
-	loadedAssemblyPaths.push_back(assemblyPath);
+    if (!loadedBackend) return;
+
+    // Pass the assembly path without surrounding quotes
+    std::string methodCall = "NetLeaf.Bridge.Assemblies.LoadAssembly(" + std::string(assemblyPath) + ")";
+    loadedBackend->RunMethod(methodCall.c_str());
 }
 
 void NetLeaf::LoadCSharpBackend(ICSharpBackend* backend) 
@@ -36,10 +38,4 @@ MethodReturnValue NetLeaf::RunCSharpMethod(const char* methodNamespace)
 		std::cerr << "Error: No CSharp backend loaded. Unable to run method: " << methodNamespace << std::endl;
 		return MethodReturnValue{};
 	}
-}
-
-// Return the vector of loaded assembly paths
-std::vector<const char*> NetLeaf::GetLoadedAssemblyPaths()
-{
-	return loadedAssemblyPaths;
 }

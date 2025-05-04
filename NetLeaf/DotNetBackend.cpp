@@ -249,21 +249,6 @@ MethodReturnValue DotNetBackend::RunMethod(const char* methodNamespace)
     void* methodNamespacePtr = (void*)methodNamespace;
 #endif
 
-    // Create an array of loaded assembly paths
-    std::vector<const char*> loadedAssemblies = NetLeaf::GetLoadedAssemblyPaths();
-    size_t assembliesCount = loadedAssemblies.size();
-    void* loadedAssembliesPtr = malloc(assembliesCount * sizeof(const char*));
-    if (loadedAssembliesPtr == nullptr)
-    {
-        LogError("Failed to allocate memory for loaded assemblies");
-        return MethodReturnValue{};
-    }
-
-    for (size_t i = 0; i < assembliesCount; ++i)
-    {
-        *((const char**)loadedAssembliesPtr + i) = loadedAssemblies[i];
-    }
-
     // Load method pointer
     void* functionPtr = nullptr;
     int rc = m_loadAssemblyFunc(
@@ -278,11 +263,10 @@ MethodReturnValue DotNetBackend::RunMethod(const char* methodNamespace)
     if (rc != 0 || functionPtr == nullptr)
     {
         LogError("Failed to get method dispatcher from assembly. HRESULT: 0x" + std::to_string(rc));
-        free(loadedAssembliesPtr);
         return MethodReturnValue{};
     }
 
-    typedef void(CORECLR_DELEGATE_CALLTYPE* MethodInvoker)(void*, void*, int, void*);
+    typedef void(CORECLR_DELEGATE_CALLTYPE* MethodInvoker)(void*, void*);
     MethodInvoker invoker = reinterpret_cast<MethodInvoker>(functionPtr);
 
     MethodReturnValue returnValue = {}; // Zero-init
@@ -290,14 +274,12 @@ MethodReturnValue DotNetBackend::RunMethod(const char* methodNamespace)
     try
     {
         // Call the managed method
-        invoker(methodNamespacePtr, loadedAssembliesPtr, (int)assembliesCount, &returnValue);
+        invoker(methodNamespacePtr, &returnValue);
     }
     catch (...)
     {
         LogError("Exception occurred during managed method invocation");
     }
-
-    free(loadedAssembliesPtr);
 
     // Return result
     return returnValue;
