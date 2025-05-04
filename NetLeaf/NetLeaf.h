@@ -13,6 +13,7 @@ class NETLEAF_API NetLeaf
 {
 public:
 	static void LoadCSharpBackend(ICSharpBackend* backend);
+	static ICSharpBackend* GetLoadedBackend();
 	static void LoadAssembly(const char* assemblyPath);
 	static MethodReturnValue RunCSharpMethod(const char* methodNamespace);
 private:

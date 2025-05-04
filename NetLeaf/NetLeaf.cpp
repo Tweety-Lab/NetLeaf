@@ -26,6 +26,11 @@ void NetLeaf::LoadCSharpBackend(ICSharpBackend* backend)
 	loadedBackend->Initialize();
 }
 
+ICSharpBackend* NetLeaf::GetLoadedBackend() 
+{
+	return loadedBackend;
+}
+
 MethodReturnValue NetLeaf::RunCSharpMethod(const char* methodNamespace)
 {
 	// Call the method on the loaded backend
