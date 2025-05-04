@@ -44,7 +44,7 @@ private:
 public:
     // ICSharpBackend
     void Initialize() override;
-    void RunMethod(const char* methodNamespace) override;
+    MethodReturnValue RunMethod(const char* methodNamespace) override;
 
     void LogError(const std::string& message);
     void LogInfo(const std::string& message);

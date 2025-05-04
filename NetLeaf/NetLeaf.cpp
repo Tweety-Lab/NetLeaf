@@ -24,16 +24,17 @@ void NetLeaf::LoadCSharpBackend(ICSharpBackend* backend)
 	loadedBackend->Initialize();
 }
 
-void NetLeaf::RunCSharpMethod(const char* methodNamespace)
+MethodReturnValue NetLeaf::RunCSharpMethod(const char* methodNamespace)
 {
 	// Call the method on the loaded backend
     if (loadedBackend)
     {
-        loadedBackend->RunMethod(methodNamespace);
+        return loadedBackend->RunMethod(methodNamespace);
 	}
 	else 
 	{
 		std::cerr << "Error: No CSharp backend loaded. Unable to run method: " << methodNamespace << std::endl;
+		return MethodReturnValue{};
 	}
 }
 

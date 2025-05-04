@@ -9,67 +9,63 @@ namespace NetLeaf.Bridge
     public static class Methods
     {
         [UnmanagedCallersOnly(EntryPoint = "RunMethod")]
-        public static void RunMethod(IntPtr methodNamespace, IntPtr loadedAssemblies, int assembliesCount)
+        public static void RunMethod(IntPtr methodNamespace, IntPtr loadedAssemblies, int assembliesCount, IntPtr resultPtr)
         {
+            MethodReturnValue result = new MethodReturnValue
+            {
+                Type = ReturnType.None,
+                StringResult = IntPtr.Zero,
+                FloatResult = 0f,
+                IntResult = 0,
+                UIntResult = 0
+            };
+
             try
             {
-                // Read method namespace string
-                string methodNamespaceStr = null;
-                if (methodNamespace != IntPtr.Zero)
+                // Validate and decode method namespace
+                if (methodNamespace == IntPtr.Zero)
                 {
-                    methodNamespaceStr = RuntimeInformation.IsOSPlatform(OSPlatform.Windows)
-                        ? Marshal.PtrToStringUni(methodNamespace)
-                        : Marshal.PtrToStringUTF8(methodNamespace);
-                }
-                else
-                {
-                    Console.WriteLine("C#: Method namespace pointer is null");
+                    WriteResult(resultPtr, result);
                     return;
                 }
 
-                // Extract loaded assemblies
+                string methodNamespaceStr = RuntimeInformation.IsOSPlatform(OSPlatform.Windows)
+                    ? Marshal.PtrToStringUni(methodNamespace)
+                    : Marshal.PtrToStringUTF8(methodNamespace);
+
+                // Validate and extract assembly paths
+                if (loadedAssemblies == IntPtr.Zero || assembliesCount == 0)
+                {
+                    WriteResult(resultPtr, result);
+                    return;
+                }
+
                 string[] assemblies = new string[assembliesCount];
-                if (loadedAssemblies != IntPtr.Zero && assembliesCount > 0)
+                for (int i = 0; i < assembliesCount; i++)
                 {
-                    for (int i = 0; i < assembliesCount; i++)
-                    {
-                        IntPtr assemblyPathPtr = Marshal.ReadIntPtr(loadedAssemblies, i * IntPtr.Size);
-                        if (assemblyPathPtr != IntPtr.Zero)
-                        {
-                            assemblies[i] = RuntimeInformation.IsOSPlatform(OSPlatform.Windows)
-                                ? Marshal.PtrToStringAnsi(assemblyPathPtr)
-                                : Marshal.PtrToStringUTF8(assemblyPathPtr);
-                        }
-                        else
-                        {
-                            Console.WriteLine($"C#: Assembly pointer {i} is null");
-                            assemblies[i] = null;
-                        }
-                    }
-                }
-                else
-                {
-                    Console.WriteLine("No assemblies provided or pointer is null");
-                    return;
+                    IntPtr ptr = Marshal.ReadIntPtr(loadedAssemblies, i * IntPtr.Size);
+                    assemblies[i] = ptr != IntPtr.Zero
+                        ? (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)
+                            ? Marshal.PtrToStringAnsi(ptr)
+                            : Marshal.PtrToStringUTF8(ptr))
+                        : null;
                 }
 
-                // Parse: Namespace.Class.Method(arg1, arg2, ...)
+                // Parse: Namespace.Class.Method(args...)
                 int parenStart = methodNamespaceStr.IndexOf('(');
                 int parenEnd = methodNamespaceStr.LastIndexOf(')');
-
                 if (parenStart == -1 || parenEnd == -1 || parenEnd <= parenStart)
                 {
-                    Console.WriteLine("Invalid format. Expected: Namespace.Class.Method(arg1, arg2, ...)");
+                    WriteResult(resultPtr, result);
                     return;
                 }
 
-                string fullMethodPath = methodNamespaceStr.Substring(0, parenStart);
-                string argsStr = methodNamespaceStr.Substring(parenStart + 1, parenEnd - parenStart - 1);
-
+                string fullMethodPath = methodNamespaceStr[..parenStart];
+                string argsStr = methodNamespaceStr[(parenStart + 1)..parenEnd];
                 string[] pathParts = fullMethodPath.Split('.');
                 if (pathParts.Length < 3)
                 {
-                    Console.WriteLine("Invalid format. Expected: Namespace.Class.Method");
+                    WriteResult(resultPtr, result);
                     return;
                 }
 
@@ -78,7 +74,6 @@ namespace NetLeaf.Bridge
                 string methodName = pathParts[^1];
                 string fullTypeName = $"{@namespace}.{className}";
 
-                // Parse arguments as strings
                 string[] argStrings = argsStr.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
 
                 foreach (string assemblyName in assemblies)
@@ -88,40 +83,76 @@ namespace NetLeaf.Bridge
                     string fullPath = Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), assemblyName);
                     Assembly assembly = Assembly.LoadFrom(fullPath);
                     Type type = assembly.GetType(fullTypeName);
+                    if (type == null) continue;
 
-                    if (type == null)
-                    {
-                        Console.WriteLine($"Type '{fullTypeName}' not found in assembly.");
-                        continue;
-                    }
-
-                    // Try to find a static method with matching argument count
                     MethodInfo method = type.GetMethods(BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic)
                         .FirstOrDefault(m => m.Name == methodName && m.GetParameters().Length == argStrings.Length);
 
-                    if (method == null)
-                    {
-                        Console.WriteLine($"Method '{methodName}' with {argStrings.Length} arguments not found in '{fullTypeName}'.");
-                        continue;
-                    }
+                    if (method == null) continue;
 
-                    // Convert string args to method parameter types
                     ParameterInfo[] paramInfos = method.GetParameters();
                     object[] finalArgs = new object[argStrings.Length];
-
                     for (int i = 0; i < argStrings.Length; i++)
                     {
                         finalArgs[i] = Convert.ChangeType(argStrings[i], paramInfos[i].ParameterType);
                     }
 
-                    method.Invoke(null, finalArgs);
-                    break; // Success
+                    object returnValue = method.Invoke(null, finalArgs);
+
+                    // Handle typed return values
+                    if (returnValue != null)
+                    {
+                        Type returnType = method.ReturnType;
+
+                        if (returnType == typeof(string))
+                        {
+                            string str = (string)returnValue;
+                            result.Type = ReturnType.String;
+                            result.StringResult = Marshal.StringToHGlobalAnsi(str);
+                        }
+                        else if (returnType == typeof(float))
+                        {
+                            result.Type = ReturnType.Float;
+                            result.FloatResult = (float)returnValue;
+                        }
+                        else if (returnType == typeof(int))
+                        {
+                            result.Type = ReturnType.Int;
+                            result.IntResult = (int)returnValue;
+                        }
+                        else if (returnType == typeof(uint))
+                        {
+                            result.Type = ReturnType.UInt;
+                            result.UIntResult = (uint)returnValue;
+                        }
+                        else
+                        {
+                            // Unsupported return type: fallback to ToString()
+                            string str = returnValue.ToString();
+                            result.Type = ReturnType.String;
+                            result.StringResult = Marshal.StringToHGlobalAnsi(str);
+                        }
+                    }
+
+                    WriteResult(resultPtr, result);
+                    return; // Success
                 }
+
+                // If we get here, nothing was found
+                WriteResult(resultPtr, result);
             }
-            catch (Exception ex)
+            catch
             {
-                Console.WriteLine($"Error in RunMethod: {ex.GetType().Name}: {ex.Message}");
-                Console.WriteLine(ex.StackTrace);
+                // On failure, return empty result
+                WriteResult(resultPtr, result);
+            }
+        }
+
+        private static void WriteResult(IntPtr resultPtr, MethodReturnValue result)
+        {
+            if (resultPtr != IntPtr.Zero)
+            {
+                Marshal.StructureToPtr(result, resultPtr, false);
             }
         }
     }

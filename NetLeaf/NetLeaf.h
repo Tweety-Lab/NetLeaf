@@ -14,7 +14,7 @@ class NETLEAF_API NetLeaf
 public:
 	static void LoadCSharpBackend(ICSharpBackend* backend);
 	static void LoadAssembly(const char* assemblyPath);
-	static void RunCSharpMethod(const char* methodNamespace);
+	static MethodReturnValue RunCSharpMethod(const char* methodNamespace);
 	static std::vector<const char*> GetLoadedAssemblyPaths();
 private:
 	static std::vector<const char*> loadedAssemblyPaths;

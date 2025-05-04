@@ -191,18 +191,18 @@ void DotNetBackend::Initialize()
     }
 }
 
-void DotNetBackend::RunMethod(const char* methodNamespace)
+MethodReturnValue DotNetBackend::RunMethod(const char* methodNamespace)
 {
     if (!m_initialized)
     {
         LogError("DotNetBackend not initialized");
-        return;
+        return MethodReturnValue{};
     }
 
     if (m_loadAssemblyFunc == nullptr)
     {
         LogError("LoadAssembly function pointer is null");
-        return;
+        return MethodReturnValue{};
     }
 
     // Derive the assembly name (without extension)
@@ -234,44 +234,44 @@ void DotNetBackend::RunMethod(const char* methodNamespace)
 
     // Convert methodNamespace to proper format based on platform
 #ifdef _WIN32
-	// Windows: UTF-16 conversion
     std::wstring methodNamespaceW;
-    if (methodNamespace != nullptr) {
+    if (methodNamespace != nullptr)
+    {
         int size_needed = MultiByteToWideChar(CP_UTF8, 0, methodNamespace, -1, NULL, 0);
-        if (size_needed > 0) {
+        if (size_needed > 0)
+        {
             methodNamespaceW.resize(size_needed);
             MultiByteToWideChar(CP_UTF8, 0, methodNamespace, -1, &methodNamespaceW[0], size_needed);
         }
     }
     void* methodNamespacePtr = methodNamespace ? (void*)methodNamespaceW.c_str() : nullptr;
 #else
-	// Non-Windows: Direct char* conversion
     void* methodNamespacePtr = (void*)methodNamespace;
 #endif
 
     // Create an array of loaded assembly paths
     std::vector<const char*> loadedAssemblies = NetLeaf::GetLoadedAssemblyPaths();
-
-    // Unmanaged memory for assembly list
     size_t assembliesCount = loadedAssemblies.size();
     void* loadedAssembliesPtr = malloc(assembliesCount * sizeof(const char*));
-    if (loadedAssembliesPtr == nullptr) {
+    if (loadedAssembliesPtr == nullptr)
+    {
         LogError("Failed to allocate memory for loaded assemblies");
-        return;
+        return MethodReturnValue{};
     }
 
-    for (size_t i = 0; i < assembliesCount; ++i) {
-        // Copy each assembly string pointer to the unmanaged memory block
+    for (size_t i = 0; i < assembliesCount; ++i)
+    {
         *((const char**)loadedAssembliesPtr + i) = loadedAssemblies[i];
     }
 
+    // Load method pointer
     void* functionPtr = nullptr;
     int rc = m_loadAssemblyFunc(
         assemblyPath,
         typeName,
         methodName,
         UNMANAGEDCALLERSONLY_METHOD,
-        nullptr,  // Use null for delegate type as we're using UnmanagedCallersOnly
+        nullptr,
         &functionPtr
     );
 
@@ -279,24 +279,28 @@ void DotNetBackend::RunMethod(const char* methodNamespace)
     {
         LogError("Failed to get method dispatcher from assembly. HRESULT: 0x" + std::to_string(rc));
         free(loadedAssembliesPtr);
-        return;
+        return MethodReturnValue{};
     }
 
-    typedef void (CORECLR_DELEGATE_CALLTYPE* MethodInvoker)(void*, void*, int);
+    typedef void(CORECLR_DELEGATE_CALLTYPE* MethodInvoker)(void*, void*, int, void*);
     MethodInvoker invoker = reinterpret_cast<MethodInvoker>(functionPtr);
+
+    MethodReturnValue returnValue = {}; // Zero-init
 
     try
     {
-        // Call the method with the correct parameters
-        invoker(methodNamespacePtr, loadedAssembliesPtr, (int)assembliesCount);
+        // Call the managed method
+        invoker(methodNamespacePtr, loadedAssembliesPtr, (int)assembliesCount, &returnValue);
     }
     catch (...)
     {
         LogError("Exception occurred during managed method invocation");
     }
 
-    // Clean up the unmanaged memory
     free(loadedAssembliesPtr);
+
+    // Return result
+    return returnValue;
 }
 
 void DotNetBackend::LogError(const std::string& message)
