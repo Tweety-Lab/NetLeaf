@@ -16,6 +16,18 @@
 # Mono auto generated files
 mono_crash.*
 
+# Premake generated files
+*.sln
+*.vcxproj*
+*.vcxitems
+*.filters
+*.user
+*.xcodeproj/
+*.xcworkspace/
+*.make
+Makefile
+*.ninja
+
 # Build results
 [Dd]ebug/
 [Dd]ebugPublic/
