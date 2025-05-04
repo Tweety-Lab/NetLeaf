@@ -216,7 +216,7 @@ void DotNetBackend::RunMethod(const char* methodNamespace)
         ? fileName.substr(0, dotPos)
         : fileName;
 
-    std::string fullTypeName = "NetLeaf.Bridge.Utility, " + assemblyName;
+    std::string fullTypeName = "NetLeaf.Bridge.Methods, " + assemblyName;
 
 #ifdef _WIN32
     std::wstring assemblyPathW(m_assemblyPath.begin(), m_assemblyPath.end());

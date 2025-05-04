@@ -6,7 +6,7 @@ using System.Runtime.InteropServices;
 
 namespace NetLeaf.Bridge
 {
-    public static class Utility
+    public static class Methods
     {
         [UnmanagedCallersOnly(EntryPoint = "RunMethod")]
         public static void RunMethod(IntPtr methodNamespace, IntPtr loadedAssemblies, int assembliesCount)
