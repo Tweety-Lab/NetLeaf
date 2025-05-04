@@ -53,25 +53,39 @@ namespace NetLeaf.Bridge
                     return;
                 }
 
-                // Parse format: Namespace.Class.Method
-                string[] parts = methodNamespaceStr.Split('.');
-                if (parts.Length < 3)
+                // Parse: Namespace.Class.Method(arg1, arg2, ...)
+                int parenStart = methodNamespaceStr.IndexOf('(');
+                int parenEnd = methodNamespaceStr.LastIndexOf(')');
+
+                if (parenStart == -1 || parenEnd == -1 || parenEnd <= parenStart)
+                {
+                    Console.WriteLine("Invalid format. Expected: Namespace.Class.Method(arg1, arg2, ...)");
+                    return;
+                }
+
+                string fullMethodPath = methodNamespaceStr.Substring(0, parenStart);
+                string argsStr = methodNamespaceStr.Substring(parenStart + 1, parenEnd - parenStart - 1);
+
+                string[] pathParts = fullMethodPath.Split('.');
+                if (pathParts.Length < 3)
                 {
                     Console.WriteLine("Invalid format. Expected: Namespace.Class.Method");
                     return;
                 }
 
-                string @namespace = string.Join(".", parts.Take(parts.Length - 2));
-                string className = parts[parts.Length - 2];
-                string methodName = parts[parts.Length - 1];
+                string @namespace = string.Join(".", pathParts.Take(pathParts.Length - 2));
+                string className = pathParts[^2];
+                string methodName = pathParts[^1];
                 string fullTypeName = $"{@namespace}.{className}";
+
+                // Parse arguments as strings
+                string[] argStrings = argsStr.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
 
                 foreach (string assemblyName in assemblies)
                 {
                     if (string.IsNullOrEmpty(assemblyName)) continue;
 
                     string fullPath = Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), assemblyName);
-
                     Assembly assembly = Assembly.LoadFrom(fullPath);
                     Type type = assembly.GetType(fullTypeName);
 
@@ -81,15 +95,27 @@ namespace NetLeaf.Bridge
                         continue;
                     }
 
-                    MethodInfo method = type.GetMethod(methodName, BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic);
+                    // Try to find a static method with matching argument count
+                    MethodInfo method = type.GetMethods(BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic)
+                        .FirstOrDefault(m => m.Name == methodName && m.GetParameters().Length == argStrings.Length);
+
                     if (method == null)
                     {
-                        Console.WriteLine($"Method '{methodName}' not found in type '{fullTypeName}'.");
+                        Console.WriteLine($"Method '{methodName}' with {argStrings.Length} arguments not found in '{fullTypeName}'.");
                         continue;
                     }
 
-                    method.Invoke(null, null);
-                    break; // We had a successful invoke, break out of the loop
+                    // Convert string args to method parameter types
+                    ParameterInfo[] paramInfos = method.GetParameters();
+                    object[] finalArgs = new object[argStrings.Length];
+
+                    for (int i = 0; i < argStrings.Length; i++)
+                    {
+                        finalArgs[i] = Convert.ChangeType(argStrings[i], paramInfos[i].ParameterType);
+                    }
+
+                    method.Invoke(null, finalArgs);
+                    break; // Success
                 }
             }
             catch (Exception ex)
