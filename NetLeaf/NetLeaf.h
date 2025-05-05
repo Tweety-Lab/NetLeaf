@@ -2,6 +2,7 @@
 
 #include <vector>
 #include "ICSharpBackend.h"
+#include "NetLeafInstance.h"
 
 #ifdef NETLEAF_EXPORTS
 #define NETLEAF_API __declspec(dllexport)  // Export for DLL
@@ -16,6 +17,7 @@ public:
 	static ICSharpBackend* GetLoadedBackend();
 	static void LoadAssembly(const char* assemblyPath);
 	static MethodReturnValue RunCSharpMethod(const char* methodNamespace);
+	static NetLeafInstance* CreateInstance(const char* typeNamespace);
 private:
 	static ICSharpBackend* loadedBackend;
 

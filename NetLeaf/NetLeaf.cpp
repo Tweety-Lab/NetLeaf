@@ -44,3 +44,8 @@ MethodReturnValue NetLeaf::RunCSharpMethod(const char* methodNamespace)
 		return MethodReturnValue{};
 	}
 }
+
+NetLeafInstance* NetLeaf::CreateInstance(const char* typeNamespace) 
+{
+	return new NetLeafInstance(typeNamespace);
+}
