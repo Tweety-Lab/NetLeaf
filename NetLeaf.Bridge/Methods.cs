@@ -1,8 +1,7 @@
 ﻿using System;
-using System.IO;
-using System.Linq;
-using System.Reflection;
 using System.Runtime.InteropServices;
+using System.Reflection;
+using System.Linq;
 
 namespace NetLeaf.Bridge
 {
@@ -33,32 +32,14 @@ namespace NetLeaf.Bridge
                     : Marshal.PtrToStringUTF8(methodNamespace);
 
                 // Parse: Namespace.Class.Method(args...)
-                int parenStart = methodNamespaceStr.IndexOf('(');
-                int parenEnd = methodNamespaceStr.LastIndexOf(')');
-                if (parenStart == -1 || parenEnd == -1 || parenEnd <= parenStart)
+                if (!TryParseMethodNamespace(methodNamespaceStr, out string fullMethodPath, out string[] argStrings))
                 {
                     WriteResult(resultPtr, result);
                     return;
                 }
-
-                string fullMethodPath = methodNamespaceStr[..parenStart];
-                string argsStr = methodNamespaceStr[(parenStart + 1)..parenEnd];
-                string[] pathParts = fullMethodPath.Split('.');
-                if (pathParts.Length < 3)
-                {
-                    WriteResult(resultPtr, result);
-                    return;
-                }
-
-                string @namespace = string.Join(".", pathParts.Take(pathParts.Length - 2));
-                string className = pathParts[^2];
-                string methodName = pathParts[^1];
-                string fullTypeName = $"{@namespace}.{className}";
-
-                string[] argStrings = argsStr.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
 
                 // First, try to find the method in the current assembly
-                MethodInfo method = FindMethodInAssembly(Assembly.GetExecutingAssembly(), fullTypeName, methodName, argStrings.Length);
+                MethodInfo method = Assemblies.FindMethodInAssembly(Assembly.GetExecutingAssembly(), fullMethodPath, argStrings.Length);
                 if (method != null)
                 {
                     InvokeMethod(method, argStrings, resultPtr, result);
@@ -66,9 +47,9 @@ namespace NetLeaf.Bridge
                 }
 
                 // Then, search through all loaded assemblies
-                foreach (Assembly assembly in AppDomain.CurrentDomain.GetAssemblies())
+                foreach (Assembly assembly in Assemblies.LoadedAssemblies)
                 {
-                    method = FindMethodInAssembly(assembly, fullTypeName, methodName, argStrings.Length);
+                    method = Assemblies.FindMethodInAssembly(assembly, fullMethodPath, argStrings.Length);
                     if (method != null)
                     {
                         InvokeMethod(method, argStrings, resultPtr, result);
@@ -85,13 +66,29 @@ namespace NetLeaf.Bridge
             }
         }
 
-        private static MethodInfo FindMethodInAssembly(Assembly assembly, string fullTypeName, string methodName, int paramCount)
+        private static bool TryParseMethodNamespace(string methodNamespaceStr, out string fullMethodPath, out string[] argStrings)
         {
-            Type type = assembly.GetType(fullTypeName);
-            if (type == null) return null;
+            fullMethodPath = null;
+            argStrings = null;
 
-            return type.GetMethods(BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic)
-                       .FirstOrDefault(m => m.Name == methodName && m.GetParameters().Length == paramCount);
+            int parenStart = methodNamespaceStr.IndexOf('(');
+            int parenEnd = methodNamespaceStr.LastIndexOf(')');
+            if (parenStart == -1 || parenEnd == -1 || parenEnd <= parenStart)
+                return false;
+
+            fullMethodPath = methodNamespaceStr[..parenStart];
+            string argsStr = methodNamespaceStr[(parenStart + 1)..parenEnd];
+            string[] pathParts = fullMethodPath.Split('.');
+            if (pathParts.Length < 3)
+                return false;
+
+            string @namespace = string.Join(".", pathParts.Take(pathParts.Length - 2));
+            string className = pathParts[^2];
+            string methodName = pathParts[^1];
+            fullMethodPath = $"{@namespace}.{className}";
+
+            argStrings = argsStr.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+            return true;
         }
 
         private static void InvokeMethod(MethodInfo method, string[] argStrings, IntPtr resultPtr, MethodReturnValue result)

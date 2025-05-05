@@ -1,4 +1,6 @@
-﻿using System.Reflection;
+﻿using System;
+using System.Collections.Generic;
+using System.Reflection;
 
 namespace NetLeaf.Bridge
 {
@@ -19,42 +21,27 @@ namespace NetLeaf.Bridge
 
             try
             {
-                // Attempt to find the type in all loaded assemblies
-                Type type = null;
-                foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies())
-                {
-                    type = assembly.GetType(typeNamespace);
-                    if (type != null)
-                        break;
-                }
-
-                // If the type is still not found, throw an error
+                Type type = Assemblies.FindTypeInLoadedAssemblies(typeNamespace);
                 if (type == null)
                 {
                     Console.WriteLine($"[CreateInstance Error] Type '{typeNamespace}' not found in loaded assemblies.");
-                    return 0; // Indicate failure to create instance
+                    return 0;
                 }
 
-                // Create an instance of the found type
                 object instance = Activator.CreateInstance(type);
-
-                // Add this instance to the instance map
                 instanceMap[id] = instance;
-
-                // Return the ID of the created instance
                 return id;
             }
             catch (Exception ex)
             {
                 Console.WriteLine($"[CreateInstance Error] {ex.Message}");
-                return 0; // Return 0 to indicate failure
+                return 0;
             }
         }
 
         // Delete an instance from its ID/Handle
         public static void DeleteInstance(uint id)
         {
-            // Remove the instance from the dictionary
             instanceMap.Remove(id);
         }
 
@@ -65,9 +52,8 @@ namespace NetLeaf.Bridge
             if (!instanceMap.TryGetValue(id, out object instance))
                 return;
 
-            Type type = instance.GetType(); // Get the instance's type
-
             // Parse the method call into method name and arguments
+            Type type = instance.GetType();
             string methodName = ParseMethodName(methodCall, out string[] argStrings);
 
             if (methodName == null)
@@ -81,14 +67,9 @@ namespace NetLeaf.Bridge
 
             // Convert arguments to the correct types
             object[] args = ConvertArguments(method, argStrings);
-
-            // Invoke the method with the parsed arguments
             method.Invoke(instance, args);
         }
 
-        // TODO: Move these helper methods to a separate class and use them in Methods.cs
-
-        // Helper method to parse the method call string into method name and arguments
         private static string ParseMethodName(string methodCall, out string[] args)
         {
             int parenStart = methodCall.IndexOf('(');
@@ -110,7 +91,6 @@ namespace NetLeaf.Bridge
             return methodName;
         }
 
-        // Helper method to convert argument strings to appropriate parameter types
         private static object[] ConvertArguments(MethodInfo method, string[] argStrings)
         {
             ParameterInfo[] paramInfos = method.GetParameters();
