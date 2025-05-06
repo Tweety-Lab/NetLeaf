@@ -98,8 +98,10 @@ project "CPPTests"
         defines { "WIN32", "_WINDOWS" }
 
         postbuildcommands {
-            -- Copy DLLs from NetLeaf.
-            "{COPY} %{wks.location}/build/bin/*.dll %{cfg.targetdir}"
+            -- Copy DLLs from NetLeaf
+            "{COPY} %{wks.location}/build/bin/*.dll %{cfg.targetdir}",
+            -- Copy C# Jsons from NetLeaf
+            "{COPY} %{wks.location}/build/bin/*.json %{cfg.targetdir}"
         }
 
     filter "system:linux"
