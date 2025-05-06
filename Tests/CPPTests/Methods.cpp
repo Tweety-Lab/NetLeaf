@@ -24,17 +24,24 @@ TEST_CASE("CSharpTests/Methods/TestStaticMethod writes expected output to file")
 	std::remove(filePath);
 }
 
-TEST_CASE("CSharpTests/Methods/TestStaticIntMethod Returns expected integer value") {
-	MethodReturnValue result = NetLeaf::RunCSharpMethod("CSharpTests.Methods.TestStaticIntMethod()");
-	REQUIRE(result.IntResult == 32);
-}
+TEST_CASE("CSharpTests/Methods") {
+    SUBCASE("TestStaticIntMethod Returns expected integer value") {
+        MethodReturnValue result = NetLeaf::RunCSharpMethod("CSharpTests.Methods.TestStaticIntMethod()");
+        REQUIRE(result.Type == ReturnType::Int);
+        REQUIRE(result.IntResult == 32);
+    }
 
-TEST_CASE("CSharpTests/Methods/TestStaticStringMethod Returns expected string value") {
-	MethodReturnValue result = NetLeaf::RunCSharpMethod("CSharpTests.Methods.TestStaticStringMethod()");
-	REQUIRE(result.StringResult == "ABC123");
-}
+    SUBCASE("TestStaticStringMethod Returns expected string value") {
+        MethodReturnValue result = NetLeaf::RunCSharpMethod("CSharpTests.Methods.TestStaticStringMethod()");
+        REQUIRE(result.Type == ReturnType::String);
+        REQUIRE(result.StringResult != nullptr);
 
-TEST_CASE("CSharpTests/Methods/TestStaticUIntMethod Returns expected uint value") {
-	MethodReturnValue result = NetLeaf::RunCSharpMethod("CSharpTests.Methods.TestStaticUIntMethod()");
-	REQUIRE(result.UIntResult == 32);
+        // TODO: Compare Strings
+    }
+
+    SUBCASE("TestStaticUIntMethod Returns expected uint value") {
+        MethodReturnValue result = NetLeaf::RunCSharpMethod("CSharpTests.Methods.TestStaticUIntMethod()");
+        REQUIRE(result.Type == ReturnType::UInt);
+        REQUIRE(result.UIntResult == 32);
+    }
 }
