@@ -52,38 +52,48 @@ externalproject "NetLeaf.Bridge"
     kind "SharedLib"
     language "C#"
 
--- C++ Unit Tests
-project "Tests"
-    kind "ConsoleApp"
-    language "C++"
-    targetdir "Tests/bin/%{cfg.buildcfg}-%{cfg.system}-%{cfg.architecture}"
+-- Unit Tests
+group "Tests"
+    -- C++ Unit Tests
+    project "CPPTests"
+        kind "ConsoleApp"
+        language "C++"
+        targetdir "Tests/bin/%{cfg.buildcfg}-%{cfg.system}-%{cfg.architecture}"
 
-    includedirs {
-        "Tests/thirdparty/catch2",
-        "NetLeaf/include"
-    }
+        includedirs {
+            "Tests/CPPTests/thirdparty/catch2",
+            "NetLeaf/include"
+        }
 
-    files {
-        "Tests/**.cpp",
-        "Tests/**.h"
-    }
+        files {
+            "Tests/CPPTests/**.cpp",
+            "Tests/CPPTests/**.h"
+        }
 
-    -- Link against NetLeaf
-    links {
-        "NetLeaf"
-    }
+        -- Link against NetLeaf
+        links {
+            "NetLeaf",
+            "NetLeaf.Bridge",
+            "CSharpTests"
+        }
 
-    filter "system:windows"
-        systemversion "latest"
-        defines { "WIN32", "_WINDOWS" }
+        filter "system:windows"
+            systemversion "latest"
+            defines { "WIN32", "_WINDOWS" }
 
-    filter "system:linux"
-        defines { "LINUX" }
+        filter "system:linux"
+            defines { "LINUX" }
 
-    filter "configurations:Debug"
-        defines { "DEBUG" }
-        symbols "On"
+        filter "configurations:Debug"
+            defines { "DEBUG" }
+            symbols "On"
 
-    filter "configurations:Release"
-        defines { "NDEBUG" }
-        optimize "On"
+        filter "configurations:Release"
+            defines { "NDEBUG" }
+            optimize "On"
+        
+    -- C# Unit Tests
+    externalproject "CSharpTests"
+        location "Tests/CSharpTests"
+        kind "SharedLib"
+        language "C#"
