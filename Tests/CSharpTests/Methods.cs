@@ -4,7 +4,8 @@
     {
         public static void TestStaticMethod()
         {
-            Console.WriteLine("TestStaticMethod() Ran");
+            // Write to a file
+            File.WriteAllText("STATICVOIDMETHODSTEST.txt", "TestStaticMethod() Ran successfully!");
         }
     }
 }

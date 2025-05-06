@@ -10,6 +10,9 @@ int main(int argc, char** argv) {
     std::cout << "Initializing DotNet Backend for Tests...\n";
     NetLeaf::LoadCSharpBackend(new DotNetBackend());
 
+    // Load C# Test assembly
+    NetLeaf::LoadAssembly("CSharpTests.dll");
+
     doctest::Context context;
 
     context.applyCommandLine(argc, argv);
