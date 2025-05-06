@@ -29,7 +29,6 @@ private:
     // Bridge Assembly management
     std::string m_assemblyPath = "NetLeaf.Bridge.dll";
     std::string m_runtimeConfigPath = "NetLeaf.Bridge.runtimeconfig.json";
-    bool m_initialized = false;
 
     // Helper methods
     void* LoadLib(const char_t* path);

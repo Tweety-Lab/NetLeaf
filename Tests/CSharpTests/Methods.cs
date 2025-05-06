@@ -1,6 +1,6 @@
 ﻿namespace CSharpTests
 {
-    public class Tests
+    public class Methods
     {
 
     }
