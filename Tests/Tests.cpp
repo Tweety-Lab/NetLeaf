@@ -1,6 +1,7 @@
-#include <iostream>
+#define CATCH_CONFIG_MAIN
+#include <catch.hpp>
 
-int main()
-{
-    std::cout << "Hello World!\n";
+// Testing... Test
+TEST_CASE("Basic Math", "[math]") {
+    REQUIRE(1 + 1 == 2);
 }
