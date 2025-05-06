@@ -8,7 +8,7 @@ project "NetLeaf"
     kind "SharedLib"
     language "C++"
     location "NetLeaf"
-    targetdir ("%{wks.location}/build/bin")
+    targetdir ("%{wks.location}/build/lib")
     objdir ("%{wks.location}/obj/%{prj.name}")
 
     files {
@@ -38,7 +38,7 @@ project "NetLeaf"
             "{COPY} %{prj.location}/include/*.h %{wks.location}/build/include/",
 
             -- Copy .NET dlls
-            "{COPY} %{prj.location}/bin/*.dll %{wks.location}/build/bin/"
+            "{COPY} %{prj.location}/lib/*.dll %{wks.location}/build/lib/"
         }
 
     filter "system:linux"
@@ -83,10 +83,6 @@ project "CPPTests"
         "NetLeaf/include"
     }
 
-    libdirs {
-        "%{wks.location}/build/bin/%{cfg.buildcfg}-%{cfg.system}-%{cfg.architecture}"
-    }
-
     links {
         "NetLeaf",
         "NetLeaf.Bridge",
@@ -99,9 +95,9 @@ project "CPPTests"
 
         postbuildcommands {
             -- Copy DLLs from NetLeaf
-            "{COPY} %{wks.location}/build/bin/*.dll %{cfg.targetdir}",
+            "{COPY} %{wks.location}/build/lib/*.dll %{cfg.targetdir}",
             -- Copy C# Jsons from NetLeaf
-            "{COPY} %{wks.location}/build/bin/*.json %{cfg.targetdir}"
+            "{COPY} %{wks.location}/build/lib/*.json %{cfg.targetdir}"
         }
 
     filter "system:linux"

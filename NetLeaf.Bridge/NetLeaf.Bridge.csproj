@@ -5,7 +5,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
 	<Platforms>x64</Platforms>
-    <OutputPath>..\build\bin</OutputPath>
+    <OutputPath>..\build\lib</OutputPath>
     <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
     <AppendRuntimeIdentifierToOutputPath>false</AppendRuntimeIdentifierToOutputPath>
 	<GenerateRuntimeConfigurationFiles>true</GenerateRuntimeConfigurationFiles>
