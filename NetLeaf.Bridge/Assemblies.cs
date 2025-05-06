@@ -22,12 +22,19 @@ namespace NetLeaf.Bridge
 
         public static MethodInfo FindMethodInAssembly(Assembly assembly, string fullTypeName, int paramCount)
         {
-            Type type = assembly.GetType(fullTypeName);
+            int lastDot = fullTypeName.LastIndexOf('.');
+            if (lastDot == -1)
+                return null;
+
+            string typeName = fullTypeName.Substring(0, lastDot);
+            string methodName = fullTypeName.Substring(lastDot + 1);
+
+            Type type = assembly.GetType(typeName);
             if (type == null)
                 return null;
 
             return type.GetMethods(BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic)
-                       .FirstOrDefault(m => m.GetParameters().Length == paramCount);
+                       .FirstOrDefault(m => m.Name == methodName && m.GetParameters().Length == paramCount);
         }
 
         public static Type FindTypeInLoadedAssemblies(string typeNamespace)

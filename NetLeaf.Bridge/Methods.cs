@@ -85,7 +85,7 @@ namespace NetLeaf.Bridge
             string @namespace = string.Join(".", pathParts.Take(pathParts.Length - 2));
             string className = pathParts[^2];
             string methodName = pathParts[^1];
-            fullMethodPath = $"{@namespace}.{className}";
+            fullMethodPath = $"{@namespace}.{className}.{methodName}";
 
             argStrings = argsStr.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
             return true;
