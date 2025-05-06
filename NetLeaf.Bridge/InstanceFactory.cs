@@ -40,6 +40,7 @@ namespace NetLeaf.Bridge
         }
 
         // Delete an instance from its ID/Handle
+        // It's deconstructor will be called on the next GC cycle
         public static void DeleteInstance(uint id)
         {
             instanceMap.Remove(id);

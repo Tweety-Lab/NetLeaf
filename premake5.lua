@@ -51,3 +51,39 @@ externalproject "NetLeaf.Bridge"
     location "NetLeaf.Bridge"
     kind "SharedLib"
     language "C#"
+
+-- C++ Unit Tests
+project "Tests"
+    kind "ConsoleApp"
+    language "C++"
+    targetdir "Tests/bin/%{cfg.buildcfg}-%{cfg.system}-%{cfg.architecture}"
+
+    includedirs {
+        "Tests/thirdparty/catch2",
+        "NetLeaf/include"
+    }
+
+    files {
+        "Tests/**.cpp",
+        "Tests/**.h"
+    }
+
+    -- Link against NetLeaf
+    links {
+        "NetLeaf"
+    }
+
+    filter "system:windows"
+        systemversion "latest"
+        defines { "WIN32", "_WINDOWS" }
+
+    filter "system:linux"
+        defines { "LINUX" }
+
+    filter "configurations:Debug"
+        defines { "DEBUG" }
+        symbols "On"
+
+    filter "configurations:Release"
+        defines { "NDEBUG" }
+        optimize "On"
