@@ -19,7 +19,7 @@ namespace CSharpTests
     {
         public void InstanceMethod()
         {
-            Console.WriteLine("InstanceIntMethod() Ran successfully!");
+            Console.WriteLine("InstanceMethod() Ran successfully!");
         }
     }
 }

@@ -3,16 +3,13 @@ workspace "NetLeafWorkspace"
     configurations { "Debug", "Release" }
     architecture "x64"
 
--- Set the location for the output build
-outputdir = "%{cfg.buildcfg}-%{cfg.system}-%{cfg.architecture}"
-
 -- C++ project (NetLeaf)
 project "NetLeaf"
     kind "SharedLib"
     language "C++"
     location "NetLeaf"
-    targetdir ("bin/" .. outputdir)
-    objdir ("obj/" .. outputdir)
+    targetdir ("build/bin/")
+    objdir ("obj/")
 
     files {
         "NetLeaf/**.cpp",
@@ -34,6 +31,12 @@ project "NetLeaf"
     filter "system:windows"
         systemversion "latest"
         defines { "WIN32", "_WINDOWS" }
+
+        postbuildcommands {
+            -- Copy headers to include directory
+            "{COPY} %{prj.location}/*.h %{wks.location}/build/include/",
+            "{COPY} %{prj.location}/include/*.h %{wks.location}/build/include/",
+        }
         
     filter "system:linux"
         defines { "LINUX" }
@@ -64,6 +67,10 @@ group "Tests"
         includedirs {
             "Tests/CPPTests/thirdparty/doctest",
             "NetLeaf/include"
+        }
+
+        libdirs {
+            "build/lib"
         }
 
         files {
