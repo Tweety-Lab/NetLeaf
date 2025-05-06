@@ -58,16 +58,21 @@ group "Tests"
     project "CPPTests"
         kind "ConsoleApp"
         language "C++"
+        location "Tests/CPPTests"
         targetdir "Tests/bin/%{cfg.buildcfg}-%{cfg.system}-%{cfg.architecture}"
 
         includedirs {
-            "Tests/CPPTests/thirdparty/catch2",
+            "Tests/CPPTests/thirdparty/doctest",
             "NetLeaf/include"
         }
 
         files {
             "Tests/CPPTests/**.cpp",
             "Tests/CPPTests/**.h"
+        }
+
+        removefiles {
+            "Tests/CPPTests/thirdparty/**.h"
         }
 
         -- Link against NetLeaf
