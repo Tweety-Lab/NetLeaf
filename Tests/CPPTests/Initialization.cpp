@@ -5,7 +5,10 @@
 
 // DotNetHost Initialization
 TEST_CASE(".NET Initialization", "[dotnet]") {
-    NetLeaf::LoadCSharpBackend(new DotNetBackend());
-    REQUIRE(NetLeaf::GetLoadedBackend()->m_initialized == true);
-    delete NetLeaf::GetLoadedBackend();
+    auto* backend = new DotNetBackend();
+    NetLeaf::LoadCSharpBackend(backend);
+
+    REQUIRE(backend->IsInitialized() == true);
+
+    delete backend;
 }

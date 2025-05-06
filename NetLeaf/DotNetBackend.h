@@ -30,6 +30,9 @@ private:
     std::string m_assemblyPath = "NetLeaf.Bridge.dll";
     std::string m_runtimeConfigPath = "NetLeaf.Bridge.runtimeconfig.json";
 
+    // Initialization
+    bool m_initialized = false;
+
     // Helper methods
     void* LoadLib(const char_t* path);
     void* GetExport(void* hModule, const char* name);
@@ -47,4 +50,6 @@ public:
 
     void LogError(const std::string& message);
     void LogInfo(const std::string& message);
+
+    bool IsInitialized() const { return m_initialized; }
 };
