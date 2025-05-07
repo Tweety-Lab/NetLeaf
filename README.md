@@ -1,6 +1,9 @@
 # NetLeaf
 *A Simplified way to run C# from native C++ Apps.*
 
+![License](https://img.shields.io/badge/License-MIT-blue) ![Release](https://img.shields.io/badge/Release-V1.0.0-green)
+
+
 NetLeaf allows simple and fast .NET C# Hosting from C++ Code through a handful of easy to understand methods.
 
 ## Features
