@@ -17,6 +17,15 @@ void NetLeaf::LoadAssembly(const char* assemblyPath)
     loadedBackend->RunMethod(methodCall.c_str());
 }
 
+void NetLeaf::UnloadAssembly(const char* assemblyPath) 
+{
+	if (!loadedBackend) return;
+
+	// Pass the assembly path without surrounding quotes
+	std::string methodCall = "NetLeaf.Bridge.Assemblies.UnloadAssembly(" + std::string(assemblyPath) + ")";
+	loadedBackend->RunMethod(methodCall.c_str());
+}
+
 void NetLeaf::LoadCSharpBackend(ICSharpBackend* backend) 
 {
 	// Store the backend instance
