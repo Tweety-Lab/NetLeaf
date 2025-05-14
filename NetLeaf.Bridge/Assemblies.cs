@@ -11,13 +11,30 @@ namespace NetLeaf.Bridge
 
         public static void LoadAssembly(string path)
         {
-            string fullPath = Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location) ?? "", path);
+            string fullPath;
+
+            // If the path is already absolute, use it directly
+            if (Path.IsPathRooted(path))
+            {
+                fullPath = path;
+            }
+            else
+            {
+                // Otherwise, resolve it relative to the executing assembly
+                string baseDir = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location) ?? "";
+                fullPath = Path.Combine(baseDir, path);
+            }
 
             if (!File.Exists(fullPath))
+            {
+                Console.WriteLine($"[NetLeaf] Assembly not found: {fullPath}");
                 return;
+            }
 
             Assembly assembly = Assembly.LoadFrom(fullPath);
             LoadedAssemblies.Add(assembly);
+
+            Console.WriteLine($"[NetLeaf] Assembly loaded: {fullPath}");
         }
 
         public static MethodInfo FindMethodInAssembly(Assembly assembly, string fullTypeName, int paramCount)
