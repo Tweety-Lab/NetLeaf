@@ -23,6 +23,7 @@ namespace NetLeaf.Bridge
             {
                 if (methodNamespace == IntPtr.Zero)
                 {
+                    Console.Error.WriteLine("[RunMethod] methodNamespace was null.");
                     WriteResult(resultPtr, result);
                     return;
                 }
@@ -34,6 +35,7 @@ namespace NetLeaf.Bridge
                 // Parse: Namespace.Class.Method(args...)
                 if (!TryParseMethodNamespace(methodNamespaceStr, out string fullMethodPath, out string[] argStrings))
                 {
+                    Console.Error.WriteLine($"[RunMethod] Failed to parse method namespace: {methodNamespaceStr}");
                     WriteResult(resultPtr, result);
                     return;
                 }
@@ -58,10 +60,12 @@ namespace NetLeaf.Bridge
                 }
 
                 // If nothing is found, return with the default result
+                Console.Error.WriteLine($"[RunMethod] Method not found: {fullMethodPath} with {argStrings.Length} args.");
                 WriteResult(resultPtr, result);
             }
-            catch
+            catch (Exception ex)
             {
+                Console.Error.WriteLine($"[RunMethod] Exception: {ex}");
                 WriteResult(resultPtr, result);
             }
         }
