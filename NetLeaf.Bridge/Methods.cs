@@ -10,7 +10,7 @@ namespace NetLeaf.Bridge
         [UnmanagedCallersOnly(EntryPoint = "RunMethod")]
         public static void RunMethod(IntPtr methodNamespace, IntPtr resultPtr)
         {
-            MethodReturnValue result = new MethodReturnValue
+            MethodReturnValue result = new()
             {
                 Type = ReturnType.None,
                 StringResult = IntPtr.Zero,
@@ -32,7 +32,6 @@ namespace NetLeaf.Bridge
                     ? Marshal.PtrToStringUni(methodNamespace)
                     : Marshal.PtrToStringUTF8(methodNamespace);
 
-                // Parse: Namespace.Class.Method(args...)
                 if (!TryParseMethodNamespace(methodNamespaceStr, out string fullMethodPath, out string[] argStrings))
                 {
                     Console.Error.WriteLine($"[RunMethod] Failed to parse method namespace: {methodNamespaceStr}");
@@ -40,26 +39,14 @@ namespace NetLeaf.Bridge
                     return;
                 }
 
-                // First, try to find the method in the current assembly
-                MethodInfo method = Assemblies.FindMethodInAssembly(Assembly.GetExecutingAssembly(), fullMethodPath, argStrings.Length);
+                // Use unified method resolution
+                MethodInfo? method = Assemblies.FindMethod(fullMethodPath, argStrings.Length);
                 if (method != null)
                 {
                     InvokeMethod(method, argStrings, resultPtr, result);
                     return;
                 }
 
-                // Then, search through all loaded assemblies
-                foreach (Assembly assembly in Assemblies.LoadedAssemblies)
-                {
-                    method = Assemblies.FindMethodInAssembly(assembly, fullMethodPath, argStrings.Length);
-                    if (method != null)
-                    {
-                        InvokeMethod(method, argStrings, resultPtr, result);
-                        return;  // Return after successfully invoking the method
-                    }
-                }
-
-                // If nothing is found, return with the default result
                 Console.Error.WriteLine($"[RunMethod] Method not found: {fullMethodPath} with {argStrings.Length} args.");
                 WriteResult(resultPtr, result);
             }
@@ -72,8 +59,8 @@ namespace NetLeaf.Bridge
 
         private static bool TryParseMethodNamespace(string methodNamespaceStr, out string fullMethodPath, out string[] argStrings)
         {
-            fullMethodPath = null;
-            argStrings = null;
+            fullMethodPath = null!;
+            argStrings = Array.Empty<string>();
 
             int parenStart = methodNamespaceStr.IndexOf('(');
             int parenEnd = methodNamespaceStr.LastIndexOf(')');
@@ -82,6 +69,7 @@ namespace NetLeaf.Bridge
 
             fullMethodPath = methodNamespaceStr[..parenStart];
             string argsStr = methodNamespaceStr[(parenStart + 1)..parenEnd];
+
             string[] pathParts = fullMethodPath.Split('.');
             if (pathParts.Length < 3)
                 return false;
@@ -99,12 +87,13 @@ namespace NetLeaf.Bridge
         {
             ParameterInfo[] paramInfos = method.GetParameters();
             object[] finalArgs = new object[argStrings.Length];
+
             for (int i = 0; i < argStrings.Length; i++)
             {
                 finalArgs[i] = Convert.ChangeType(argStrings[i], paramInfos[i].ParameterType);
             }
 
-            object returnValue = method.Invoke(null, finalArgs);
+            object? returnValue = method.Invoke(null, finalArgs);
 
             if (returnValue != null)
             {
@@ -133,7 +122,7 @@ namespace NetLeaf.Bridge
                 else
                 {
                     result.Type = ReturnType.String;
-                    result.StringResult = Marshal.StringToHGlobalAnsi(returnValue.ToString());
+                    result.StringResult = Marshal.StringToHGlobalAnsi(returnValue.ToString() ?? string.Empty);
                 }
             }
 

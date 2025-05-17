@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Reflection;
 
 namespace NetLeaf.Bridge;
@@ -14,10 +15,10 @@ public static class Assemblies
         public string Path;
     }
 
-    private static List<LoadedPlugin> _loadedPlugins = new();
+    private static readonly List<LoadedPlugin> _loadedPlugins = new();
 
     public static IEnumerable<Assembly> LoadedAssemblies
-    => _loadedPlugins.Select(p => p.Assembly);
+        => _loadedPlugins.Select(p => p.Assembly);
 
     public static void LoadAssembly(string path)
     {
@@ -52,7 +53,6 @@ public static class Assemblies
             _loadedPlugins.Remove(plugin);
             plugin.Context.Unload();
 
-            // Force GC to clean up, otherwise unloading won't complete
             GC.Collect();
             GC.WaitForPendingFinalizers();
 
@@ -60,7 +60,29 @@ public static class Assemblies
         }
     }
 
-    public static MethodInfo FindMethodInAssembly(Assembly assembly, string fullTypeName, int paramCount)
+    public static MethodInfo? FindMethod(string fullTypeName, int paramCount)
+    {
+        foreach (var method in EnumerateMethods(fullTypeName, paramCount))
+        {
+            if (method != null)
+                return method;
+        }
+
+        return null;
+    }
+
+    private static IEnumerable<MethodInfo?> EnumerateMethods(string fullTypeName, int paramCount)
+    {
+        // Check loaded plugin assemblies first
+        foreach (var asm in LoadedAssemblies)
+            yield return TryGetMethod(asm, fullTypeName, paramCount);
+
+        // Then fallback to all AppDomain assemblies
+        foreach (var asm in AppDomain.CurrentDomain.GetAssemblies())
+            yield return TryGetMethod(asm, fullTypeName, paramCount);
+    }
+
+    private static MethodInfo? TryGetMethod(Assembly assembly, string fullTypeName, int paramCount)
     {
         int lastDot = fullTypeName.LastIndexOf('.');
         if (lastDot == -1)
@@ -69,7 +91,7 @@ public static class Assemblies
         string typeName = fullTypeName.Substring(0, lastDot);
         string methodName = fullTypeName.Substring(lastDot + 1);
 
-        Type type = assembly.GetType(typeName);
+        Type? type = assembly.GetType(typeName);
         if (type == null)
             return null;
 
@@ -77,14 +99,22 @@ public static class Assemblies
                    .FirstOrDefault(m => m.Name == methodName && m.GetParameters().Length == paramCount);
     }
 
-    public static Type FindTypeInLoadedAssemblies(string typeNamespace)
+    public static Type? FindTypeInLoadedAssemblies(string typeNamespace)
     {
         foreach (var plugin in _loadedPlugins)
         {
-            Type type = plugin.Assembly.GetType(typeNamespace);
+            var type = plugin.Assembly.GetType(typeNamespace);
             if (type != null)
                 return type;
         }
+
+        foreach (var asm in AppDomain.CurrentDomain.GetAssemblies())
+        {
+            var type = asm.GetType(typeNamespace);
+            if (type != null)
+                return type;
+        }
+
         return null;
     }
 }
