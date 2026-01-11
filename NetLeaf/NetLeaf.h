@@ -3,12 +3,7 @@
 #include <vector>
 #include "ICSharpBackend.h"
 #include "NetLeafInstance.h"
-
-#ifdef NETLEAF_EXPORTS
-#define NETLEAF_API __declspec(dllexport)  // Export for DLL
-#else
-#define NETLEAF_API __declspec(dllimport)  // Import for users of the DLL
-#endif
+#include "NetLeafAPI.h"
 
 class NETLEAF_API NetLeaf
 {

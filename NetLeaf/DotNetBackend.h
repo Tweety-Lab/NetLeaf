@@ -6,15 +6,10 @@
 #include <coreclr_delegates.h>
 #include <hostfxr.h>
 
-#ifdef DOTNETBACKEND_EXPORTS
-#define DOTNETBACKEND_API __declspec(dllexport)
-#else
-#define DOTNETBACKEND_API __declspec(dllimport)
-#endif
-
+#include "NetLeafAPI.h"
 #include "ICSharpBackend.h"
 
-class DOTNETBACKEND_API DotNetBackend : public ICSharpBackend
+class NETLEAF_API DotNetBackend : public ICSharpBackend
 {
 private:
     // HostFxr function pointers

@@ -6,6 +6,7 @@ workspace "NetLeafWorkspace"
 -- C++ project (NetLeaf)
 project "NetLeaf"
     kind "SharedLib"
+    defines {"NETLEAF_BUILD"}
     language "C++"
     location "NetLeaf"
     targetdir ("%{wks.location}/build/lib")
