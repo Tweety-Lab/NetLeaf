@@ -2,16 +2,18 @@
 
 namespace NetLeaf.Bridge;
 
-// Struct for passing a methods return value back to C++
+/// <summary>
+/// Struct used for safetly passing a methods return value to unmanaged code.
+/// </summary>
 [StructLayout(LayoutKind.Sequential)]
 public struct MethodReturnValue
 {
-    public IntPtr StringResult; // Pointer to marshaled string
+    public IntPtr StringResult;
     public float FloatResult;
     public uint UIntResult;
     public int IntResult;
 
-    public ReturnType Type; // Indicate the type of the return value
+    public ReturnType Type;
 }
 
 public enum ReturnType : int

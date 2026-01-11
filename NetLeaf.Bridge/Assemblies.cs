@@ -4,23 +4,35 @@ namespace NetLeaf.Bridge;
 
 public static class Assemblies
 {
+    /// <summary>
+    /// Represents a loaded plugin/assembly.
+    /// </summary>
     private class LoadedPlugin
     {
         public PluginLoadContext Context;
         public Assembly Assembly;
         public string Path;
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="LoadedPlugin"/> class.
+        /// </summary>
+        public LoadedPlugin(PluginLoadContext context, Assembly assembly, string path) => (Context, Assembly, Path) = (context, assembly, path);
     }
 
     private static readonly List<LoadedPlugin> _loadedPlugins = new();
 
-    public static IEnumerable<Assembly> LoadedAssemblies
-        => _loadedPlugins.Select(p => p.Assembly);
+    /// <summary>
+    /// All currently loaded assemblies.
+    /// </summary>
+    public static IEnumerable<Assembly> LoadedAssemblies => _loadedPlugins.Select(p => p.Assembly);
 
+    /// <summary>
+    /// Load an assembly.
+    /// </summary>
+    /// <param name="path">Path to the assembly.</param>
     public static void LoadAssembly(string path)
     {
-        string fullPath = Path.IsPathRooted(path)
-            ? path
-            : System.IO.Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location) ?? "", path);
+        string fullPath = Path.IsPathRooted(path) ? path : System.IO.Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location) ?? "", path);
 
         if (!File.Exists(fullPath))
         {
@@ -31,16 +43,15 @@ public static class Assemblies
         var context = new PluginLoadContext(fullPath);
         var assembly = context.LoadFromAssemblyPath(fullPath);
 
-        _loadedPlugins.Add(new LoadedPlugin
-        {
-            Context = context,
-            Assembly = assembly,
-            Path = fullPath
-        });
+        _loadedPlugins.Add(new LoadedPlugin(context, assembly, fullPath));
 
         Console.WriteLine($"[NetLeaf] Assembly loaded: {fullPath}");
     }
 
+    /// <summary>
+    /// Unload an assembly.
+    /// </summary>
+    /// <param name="path">Path to the assembly.</param>
     public static void UnloadAssembly(string path)
     {
         var plugin = _loadedPlugins.Find(p => p.Path == path);

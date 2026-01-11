@@ -28,9 +28,15 @@ public static class Methods
                 return;
             }
 
-            string methodNamespaceStr = RuntimeInformation.IsOSPlatform(OSPlatform.Windows)
-                ? Marshal.PtrToStringUni(methodNamespace)
-                : Marshal.PtrToStringUTF8(methodNamespace);
+            string? methodNamespaceStr = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? Marshal.PtrToStringUni(methodNamespace) : Marshal.PtrToStringUTF8(methodNamespace);
+
+            if (methodNamespaceStr == null)
+            {
+                Console.Error.WriteLine("[RunMethod] methodNamespaceStr was null.");
+                WriteResult(resultPtr, result);
+                return;
+            }
+
 
             if (!TryParseMethodNamespace(methodNamespaceStr, out string fullMethodPath, out string[] argStrings))
             {
