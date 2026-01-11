@@ -25,14 +25,14 @@ public static class InstanceFactory
 
         try
         {
-            Type type = Assemblies.FindTypeInLoadedAssemblies(typeNamespace);
+            Type type = Assemblies.FindTypeInLoadedAssemblies(typeNamespace)!;
             if (type == null)
             {
                 Console.WriteLine($"[CreateInstance Error] Type '{typeNamespace}' not found in loaded assemblies.");
                 return 0;
             }
 
-            object instance = Activator.CreateInstance(type);
+            object instance = Activator.CreateInstance(type) ?? throw new Exception("Failed to create instance.");
             instanceMap[id] = instance;
             return id;
         }
@@ -74,11 +74,11 @@ public static class InstanceFactory
             return;
 
         // Convert arguments to the correct types
-        object[] args = ConvertArguments(method, argStrings);
+        object[] args = ConvertArguments(method, argStrings ?? Array.Empty<string>());
         method.Invoke(instance, args);
     }
 
-    private static string ParseMethodName(string methodCall, out string[] args)
+    private static string? ParseMethodName(string methodCall, out string[]? args)
     {
         int parenStart = methodCall.IndexOf('(');
         int parenEnd = methodCall.LastIndexOf(')');
